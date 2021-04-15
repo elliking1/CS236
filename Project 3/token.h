@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #ifndef TOKEN_H
 #define TOKEN_H
 
