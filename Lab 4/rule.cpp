@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #include "rule.h"
 
 Rule::Rule() {
