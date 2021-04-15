@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #include "parameter.h"
 
 Parameter::Parameter(Token* token) {
