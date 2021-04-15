@@ -1,6 +1,3 @@
-// Robert Williams CS 236
-
-
 #ifndef PARAMETER_H
 #define PARAMETER_H
 
