@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #include "interpreter.h"
 
 Interpreter::Interpreter(DatalogProgram* program) {
