@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #ifndef PREDICATE_H
 #define PREDICATE_H
 
