@@ -1,11 +1,3 @@
-//
-//  DatalogProgram.cpp
-//  Project2
-//
-//  Created by Cam on 2/6/19.
-//  Copyright © 2019 Cam Brown. All rights reserved.
-//
-
 #include "DatalogProgram.h"
 #include <iostream>
 #include <sstream>
