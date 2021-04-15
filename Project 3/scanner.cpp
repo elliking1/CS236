@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #include "scanner.h"
 #include <ctype.h>
 #include <vector>
