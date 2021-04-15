@@ -1,11 +1,3 @@
-//
-//  main.cpp
-//  Project4
-//
-//  Created by Cam on 3/26/19.
-//  Copyright © 2019 Cam Brown. All rights reserved.
-//
-
 #include <string>
 #include <iostream>
 #include <fstream>
