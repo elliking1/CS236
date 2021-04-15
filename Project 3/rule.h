@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #ifndef RULE_H
 #define RULE_H
 
