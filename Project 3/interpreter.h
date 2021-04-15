@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 using namespace std;
 
 #ifndef INTERPRETER_H
