@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #include "relation.h"
 
 Relation::Relation(string name, vector<string> scheme) {
