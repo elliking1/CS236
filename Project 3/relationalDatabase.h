@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #ifndef RELATIONALDATABASE_H
 #define RELATIONALDATABASE_H
 
