@@ -1,117 +1,160 @@
-#include "interpreter.h"
+#include "Interpreter.h"
 
-Interpreter::Interpreter(DatalogProgram* program) {
-	this->program = program;
-	this->database = new RelationalDatabase();
+Interpreter :: Interpreter() {
+
 }
 
-Interpreter::~Interpreter() {
-	delete this->database;
+Interpreter :: Interpreter(DatalogProgram data) {
+    // Store the DatalogProgram as a data member
+    datalog = data;
+    schemeVector = data.getSchemes();
+    factVector = data.getFacts();
+    ruleVector =  data.getRules();
+    queryVector = data.getQueries();
+    
+    // Make a Relation for each scheme Predicate, and put that Relation in the Database data member
+    for(int i = 0; i < (int)schemeVector.size(); ++i){
+        string schemeName = schemeVector.at(i).getID();
+        vector<Parameter> schemeParams = schemeVector.at(i).getParameters();
+        Scheme scheme;
+        for(int j = 0; j < (int)schemeParams.size(); ++j){
+            string value = schemeParams.at(j).getValue();
+            scheme.push_back(value);
+        }
+        Relation newRelation(schemeName, scheme);
+        database.insert(pair<string, Relation>(schemeName, newRelation));
+    }
+    
+    // Make a Tuple for each fact Predicate, and put that Tuple in the appropriate Relation in the Database
+    for(int i = 0; i < (int)factVector.size(); ++i){
+        string factName = factVector.at(i).getID();
+        vector<Parameter> factParams = factVector.at(i).getParameters();
+        Tuple tuple;
+        for(int j = 0; j < (int)factParams.size(); ++j){
+            string value = factParams.at(j).getValue();
+            tuple.push_back(value);
+        }
+        (database.at(factName)).addTuple(tuple);
+    }
 }
 
-void Interpreter::buildDatabase() {
-	this->addSchemes();
-	this->addFacts();
+Interpreter :: ~Interpreter() {
+    
 }
 
-void Interpreter::addSchemes() {
-	vector<Predicate*> schemes = program->schemes;
-	// loop over schemes
-	for (unsigned int i = 0; i < schemes.size(); i++) {
-		string relation_name = schemes[i]->id->getExtracted();
-		vector<string> relation_scheme;
-
-		// loop over parameters
-		vector<Parameter*> parameter_list = schemes[i]->parameterList;
-		for (unsigned int j = 0; j < parameter_list.size(); j++) {
-			relation_scheme.push_back(parameter_list[j]->value->getExtracted());
-		}
-
-		// create the new relation
-		Relation* relation = new Relation(relation_name, relation_scheme);
-
-		// add the relation to the database
-		this->database->addRelation(relation_name, relation);
-	}
+Relation Interpreter :: evalOnePredicate(Predicate myPredicate) {
+    string predicateName = myPredicate.getID();
+    Relation myRelation = database.at(predicateName);
+    vector<Parameter> predParams = myPredicate.getParameters();
+    vector<int> positions;
+    vector<string> variableNames;
+    map<string, int> variables;
+    for(int i = 0; i < (int)predParams.size(); i++) {
+        if((predParams.at(i).getIsConstant()) == true) {
+            myRelation = myRelation.select(predParams.at(i).getValue(), i, myRelation);
+        }
+        else {
+            map<string, int> :: iterator duplicate = variables.find(predParams.at(i).getValue());
+            if(duplicate == variables.end()) {
+                positions.push_back(i);
+                variableNames.push_back(predParams.at(i).getValue());
+                variables.insert(pair<string, int>(predParams.at(i).getValue(), i));
+            }
+            else {
+                myRelation = myRelation.select(duplicate->second, i, myRelation);
+            }
+        }
+        
+    }
+    myRelation = myRelation.project(positions, myRelation);
+    myRelation = myRelation.rename(variableNames, myRelation);
+    
+    return myRelation;
 }
 
-void Interpreter::addFacts() {
-	vector<Predicate*> facts = program->facts;
-	// loop over facts
-	for (unsigned int i = 0; i < facts.size(); i++) {
-		string relation_name = facts[i]->id->getExtracted();
+void Interpreter :: evalOneRule(Rule myRule) {
 
-		// make sure that the relation exists in the database
-		Relation* relation = this->database->getRelation(relation_name);
-		if (relation == NULL) continue;
-
-		vector<string> relation_row;
-
-		// loop over parameters
-		vector<Parameter*> parameter_list = facts[i]->parameterList;
-		for (unsigned int j = 0; j < parameter_list.size(); j++) {
-			relation_row.push_back(parameter_list[j]->value->getExtracted());
-		}
-
-		// add the row to the relation
-		relation->addRow(relation_row);
-	}
+    vector<Predicate> rulePreds = myRule.getPredicateList();
+    vector<Relation> relVec;
+    for(Predicate x : rulePreds) {
+        Relation newRelation = evalOnePredicate(x);
+        relVec.push_back(newRelation);
+    }
+    int relVecSize = (int)relVec.size();
+    for(int i = 0; i < relVecSize; i++) {
+        if(i == relVecSize - 1) {
+            break;
+        }
+        else {
+            relVec.at(i+1) = relVec.at(i).join(relVec.at(i), relVec.at(i+1));
+        }
+    }
+    Relation newRelation = relVec.at(relVecSize-1);
+    
+    Predicate headPredicate = myRule.getHeadPredicate();
+    vector<Parameter> headPredParams = headPredicate.getParameters();
+    int headPredSize = (int)headPredParams.size();
+    int relParamSize = (int)newRelation.getScheme().size();
+    vector<int> positions;
+    vector<string> renameVals;
+    for(int i = 0; i < headPredSize; i++){
+        for(int j = 0; j < relParamSize; j++) {
+            if(headPredParams.at(i).getValue() == newRelation.getScheme().at(j)){
+                positions.push_back(j); 
+            }
+        }
+    }
+    Relation tempRel = database.at(headPredicate.getID());
+    for(int i = 0; i < (int)tempRel.getScheme().size(); i++){
+        renameVals.push_back(tempRel.getScheme().at(i));
+    }
+    
+    newRelation = newRelation.project(positions, newRelation);
+    newRelation = newRelation.rename(renameVals, newRelation);
+    database.at(headPredicate.getID()).unite(newRelation);
 }
 
-string Interpreter::runQueries() {
-	string output = "";
+void Interpreter :: evalAllRules() {
+    int sizeBefore = 0;
+    int sizeAfter = 0;
+    int numPasses = 0;
+    cout << "Rule Evaluation" << endl;
+    do{
+        sizeBefore = database.getSize();
+        for(int i = 0; i < (int)ruleVector.size(); i++){
+            cout << ruleVector.at(i).toString();
+            evalOneRule(ruleVector.at(i));
+            cout << endl;
+        }
+        sizeAfter = database.getSize();
+        numPasses++;
+    } while(sizeBefore != sizeAfter);
+    cout << endl << "Schemes populated after " << numPasses << " passes through the Rules." << endl << endl;
+}
 
-	vector<Predicate*> queries = program->queries;
-	// loop over queries
-	for (unsigned int i = 0; i < queries.size(); i++) {
-		string relation_name = queries[i]->id->getExtracted();
+void Interpreter :: evalAllQueries() {
+    cout << "Query Evaluation" << endl;
+    for(int i = 0; i < (int)queryVector.size(); ++i) {
+        Relation newRelation = evalOnePredicate(queryVector.at(i));
+        cout << queryVector.at(i).toString() << "? ";
+        if(newRelation.getSet().empty()) {
+            cout << "No";
+        }
+        else {
+            cout << "Yes(" << (int)newRelation.getSet().size() << ")";
+            cout << newRelation.toString();
+        }
+        if(i != (int)queryVector.size()-1) {
+            cout << endl;
+        }
+    }
+}
 
-		// make sure that the relation exists in the database
-		Relation* relation = this->database->getRelation(relation_name);
-		if (relation == NULL) continue;
-
-		// select with the query parameters
-		vector<Parameter*> parameter_list = queries[i]->parameterList;
-		vector<string> values;
-		for (unsigned int j = 0; j < parameter_list.size(); j++) {
-			values.push_back(parameter_list[j]->value->getExtracted());
-		}
-		Relation* select_result = this->database->select(relation_name, values);
-		this->database->addRelation("select_result", select_result);
-
-		// project the necessary columns
-		vector<int> indexes;
-		for (unsigned int j = 0; j < parameter_list.size(); j++) {
-			if (parameter_list[j]->type == ID) {
-				indexes.push_back(j);
-			}
-		}
-		Relation* project_result = this->database->project("select_result", indexes);
-		this->database->addRelation("project_result", project_result);
-
-		// rename the columns
-		vector<string> scheme;
-		for (unsigned int j = 0; j < parameter_list.size(); j++) {
-			if (parameter_list[j]->type == ID) {
-				scheme.push_back(parameter_list[j]->value->getExtracted());
-			}
-		}
-		Relation* rename_result = this->database->rename("project_result", scheme);
-		this->database->addRelation("rename_result", rename_result);
-
-
-		output += queries[i]->toString() + "?";
-		if (rename_result->rows.size() == 0 && select_result->rows.size() == 0) {
-			output += " No\n";
-		} else {
-			stringstream ss;
-			ss << select_result->rows.size();
-			output += " Yes(" + ss.str() + ")\n";
-		}
-		if (rename_result->rows.size() > 0) {
-			output += rename_result->toString();
-		}
-	}
-
-	return output;
+void Interpreter :: test1() {
+     Relation relation1 = database.at("snap");
+     Relation relation2 = database.at("csg");
+     Relation newRelation = database.at("Grades");
+     newRelation = newRelation.join(relation1, relation2);
+     cout << newRelation.toString();
+     cout << endl;
 }
