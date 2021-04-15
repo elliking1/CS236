@@ -1,3 +1,5 @@
+// Robert Williams CS 236
+
 #include "datalogProgram.h"
 
 DatalogProgram::DatalogProgram() {
