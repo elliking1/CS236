@@ -1,11 +1,3 @@
-//
-//  Scanner.h
-//  Project 1
-//
-//  Created by Cam on 1/22/2019.
-//  Copyright © 2019 Cameron Brown. All rights reserved.
-//
-
 #ifndef Scanner_h
 #define Scanner_h
 
