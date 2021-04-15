@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #include "predicate.h"
 
 Predicate::Predicate(Token* id) {
