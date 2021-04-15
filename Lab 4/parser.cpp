@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #include "parser.h"
 
 Parser::Parser(vector<Token*> tokens) {
