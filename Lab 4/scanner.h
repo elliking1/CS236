@@ -1,5 +1,3 @@
-// Robert Williams CS 236
-
 #include <iostream>
 #include <stdio.h>
 #include <string>
