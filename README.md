@@ -1,5 +1,5 @@
-##Project Labs
+## Project Labs
 
-#BYU CS236
+# BYU CS236
 
 All labs are completed and passed all tests.
